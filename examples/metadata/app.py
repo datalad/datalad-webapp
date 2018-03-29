@@ -1,8 +1,14 @@
+from os.path import dirname
+from os.path import join as opj
 
 
-class DLWebApp(object):
+class MetadataAppExample(object):
     import cherrypy
     from cherrypy import tools
+
+    _webapp_dir = dirname(__file__)
+    _webapp_staticdir = 'static'
+    _webapp_config = opj(_webapp_dir, 'app.conf')
 
     def __init__(self, dataset):
         from datalad.distribution.dataset import require_dataset

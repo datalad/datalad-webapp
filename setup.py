@@ -16,12 +16,15 @@ setup(
         'datalad',
     ],
     entry_points = {
-        # 'datalad.modules' is THE entrypoint inspected by the datalad API builders
         'datalad.modules': [
-            # the label in front of '=' is the command suite label
+            'webapp=datalad_webapp:module_suite',
+        ],
+        # 'datalad.webapps' is THE entrypoint inspected by the datalad webapp command
+        'datalad.webapps': [
+            # the label in front of '=' is the webapp name
             # the entrypoint can point to any symbol of any name, as long it is
             # valid datalad interface specification
-            'webapp=datalad_webapp:module_suite',
+            'example_metadata=examples.metadata.app:MetadataAppExample',
         ]
     },
 )

@@ -20,6 +20,7 @@ from os.path import join as opj
 from glob import glob
 
 from datalad import cfg
+from pkg_resources import iter_entry_points
 
 from datalad.dochelpers import exc_str
 from datalad.utils import assure_list
@@ -37,50 +38,12 @@ from datalad.distribution.dataset import EnsureDataset
 module_suite = (
     # description of the command suite, displayed in cmdline help
     "Generic web app support",
-    [
-        # specification of a command, any number of commands can be defined
-        (
-            # importable module that contains the command implementation
-            'datalad_webapp',
-            # name of the command class implementation in above module
-            'WebApp',
-        ),
-    ]
+    [('datalad_webapp', 'WebApp', 'webapp', 'webapp')]
 )
 
 # we want to hook into datalad's logging infrastructure, so we use a common
 # prefix
 lgr = logging.getLogger('datalad.module.webapp')
-
-
-def _get_webapps():
-    locations = (
-        dirname(__file__),
-        cfg.obtain('datalad.locations.system-webapps'),
-        cfg.obtain('datalad.locations.user-webapps'))
-    return {basename(e): {'directory': e}
-            for webappdir in locations
-            for e in glob(opj(webappdir, '[!_]*'))
-            if isdir(e)}
-
-
-def _import_webapp(filepath):
-    locals = {}
-    globals = {}
-    try:
-        exec(compile(open(filepath, "rb").read(),
-                     filepath, 'exec'),
-             globals,
-             locals)
-    except Exception as e:
-        # any exception means full stop
-        raise ValueError('webapp at {} is broken: {}'.format(
-            filepath, exc_str(e)))
-    if not len(locals) or 'DLWebApp' not in locals:
-        raise ValueError(
-            "loading webapp '%s' did not yield a 'DLWebApp' symbol, found: %s",
-            filepath, locals.keys() if len(locals) else None)
-    return locals['DLWebApp']
 
 
 @build_doc
@@ -115,8 +78,10 @@ class WebApp(Interface):
             raise ValueError('no app specification given')
         if not isinstance(apps[0], (list, tuple)):
             apps = [apps]
+        apps = {a[0] if isinstance(a, (list, tuple)) else a:
+                a[1] if isinstance(a, (list, tuple)) and len(a) > 1 else None
+                for a in apps}
 
-        known_webapps = _get_webapps()
         import cherrypy
 
         # global config
@@ -151,16 +116,13 @@ class WebApp(Interface):
         # when running on a priviledged port
         #DropPrivileges(cherrypy.engine, uid=1000, gid=1000).subscribe()
 
-        for appspec in apps:
-            label = appspec[0]
-            mount = None
-            if len(appspec) > 1:
-                mount = appspec[1]
-            else:
-                mount = '/'
-            appinfo = known_webapps[label]
+        enabled_apps = []
+        for ep in iter_entry_points('datalad.webapps'):
+            if ep.name not in apps:
+                continue
+            mount = apps[ep.name] if apps[ep.name] else '/'
             # get the webapp class
-            cls = _import_webapp(opj(appinfo['directory'], 'app.py'))
+            cls = ep.load()
             # fire up the webapp instance
             inst = cls(**dict(dataset=dataset))
             # mount under global URL tree (default or given suburl)
@@ -168,27 +130,33 @@ class WebApp(Interface):
                 root=inst,
                 script_name=mount,
                 # app config file, it is ok for that file to not exist
-                config=opj(appinfo['directory'], 'app.conf')
+                config=cls._webapp_config
             )
             # forcefully impose more secure mode
             # TODO might need one (or more) switch(es) to turn things off for
             # particular scenarios
+            enabled_apps.append(ep.name)
             app.merge({
                 '/': {
                     # turns all security headers on
                     'tools.secureheaders.on': True,
                     'tools.sessions.secure': True,
                     'tools.sessions.httponly': True}})
-            static_dir = opj(appinfo['directory'], 'static')
+            static_dir = opj(cls._webapp_dir, cls._webapp_staticdir)
             if isdir(static_dir):
                 app.merge({
                     # the key has to be / even when an app is mount somewhere
                     # below
                     '/': {
                         'tools.staticdir.on': True,
-                        'tools.staticdir.root': appinfo['directory'],
-                        'tools.staticdir.dir': 'static'}}
+                        'tools.staticdir.root': cls._webapp_dir,
+                        'tools.staticdir.dir': cls._webapp_staticdir}}
                 )
+        failed_apps = set(apps).difference(enabled_apps)
+        if failed_apps:
+            lgr.warning('Failed to load webapps: %s', failed_apps)
+        if not enabled_apps:
+            return
         cherrypy.engine.start()
         cherrypy.engine.block()
         yield {}
