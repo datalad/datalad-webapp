@@ -8,6 +8,6 @@ class SimpleCPTest(helper.CPWebCase):
 
     setup_server = staticmethod(setup_server)
 
-    def server_ok(self):
+    def test_server_ok(self):
         self.getPage("/")
         self.assertStatus('200 OK')
