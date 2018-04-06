@@ -11,6 +11,7 @@
 __docformat__ = 'restructuredtext'
 
 import logging
+import uuid
 
 from os.path import isdir
 from os.path import join as opj
@@ -41,6 +42,16 @@ module_suite = (
 lgr = logging.getLogger('datalad.extension.webapp')
 
 
+def verify_host_secret():
+    import cherrypy
+    session_host_secret = cherrypy.session.get('datalad_host_secret', None)
+    system_host_secret = cherrypy.config.get('datalad_host_secret', None)
+    if not session_host_secret == system_host_secret:
+        raise cherrypy.HTTPError(
+            401,
+            'Unauthorized session, please visit the URL shown at webapp startup')
+
+
 @build_doc
 class WebApp(Interface):
     """
@@ -64,12 +75,21 @@ class WebApp(Interface):
             doc="""Execution mode: regular foreground process (normal);
             background process (daemon); no server is started, but all
             configuration is perform (dry-run)"""),
+        hostsecret=Parameter(
+            args=("--hostsecret",),
+            doc="""Secret string that COULD be used by webapps to authenticate
+            client sessions. This is not a replacement of a proper
+            authentication or encryption setup. It is merely useful for
+            implementing a simple session authentication by comparision to
+            a secret string that is only available on the webapp host machine.
+            The secret is logged on webapp startup. By default a random string
+            is generated."""),
     )
 
     @staticmethod
     @datasetmethod(name='webapp')
     @eval_results
-    def __call__(app, dataset=None, mode='normal'):
+    def __call__(app, dataset=None, mode='normal', hostsecret=None):
         apps = assure_list(app)
         if not apps:
             raise ValueError('no app specification given')
@@ -81,13 +101,24 @@ class WebApp(Interface):
 
         import cherrypy
 
+        if hostsecret is None:
+            hostsecret = uuid.uuid4()
+            # little dance for python compat
+            if hasattr(hostsecret, 'get_hex'):
+                hostsecret = hostsecret.get_hex()
+            else:
+                hostsecret = hostsecret.hex
         # global config
         cherrypy.config.update({
             # prevent visible tracebacks, etc:
             # http://docs.cherrypy.org/en/latest/config.html#id14
             #'environment': 'production',
             #'log.error_file': 'site.log',
+            'datalad_host_secret': hostsecret,
         })
+
+        cherrypy.tools.verify_datalad_hostsecret = cherrypy.Tool(
+            'before_handler', verify_host_secret)
 
         # set the priority according to your needs if you are hooking something
         # else on the 'before_finalize' hook point.
@@ -141,8 +172,14 @@ class WebApp(Interface):
                 '/': {
                     # turns all security headers on
                     'tools.secureheaders.on': True,
-                    'tools.sessions.secure': True,
-                    'tools.sessions.httponly': True}})
+                    # the next one require SSL to be enable, which
+                    # obviously requires a certificate, too much for
+                    # now and for local host applications
+                    # TODO expose option to point to a certificate and
+                    # enable SSL in the server
+                    #'tools.sessions.secure': True,
+                    'tools.sessions.httponly': True
+                    }})
             static_dir = opj(cls._webapp_dir, cls._webapp_staticdir)
             if isdir(static_dir):
                 app.merge({
@@ -163,6 +200,11 @@ class WebApp(Interface):
             return
         if mode == 'dry-run':
             return
+        lgr.info('Host secret is: %s', cherrypy.config['datalad_host_secret'])
         cherrypy.engine.start()
+        lgr.info(
+            'Access authenticated webapp session at: http://%s:%i?datalad_host_secret=%s',
+            *cherrypy.server.bound_addr,
+            cherrypy.config['datalad_host_secret'])
         cherrypy.engine.block()
         yield {}

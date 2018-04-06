@@ -1,11 +1,11 @@
 from os.path import dirname
 from os.path import join as opj
 
+import cherrypy
+from cherrypy import tools
+
 
 class MetadataAppExample(object):
-    import cherrypy
-    from cherrypy import tools
-
     _webapp_dir = dirname(__file__)
     _webapp_staticdir = 'static'
     _webapp_config = opj(_webapp_dir, 'app.conf')
@@ -16,7 +16,15 @@ class MetadataAppExample(object):
             dataset, check_installed=True, purpose='serving')
 
     @cherrypy.expose
-    def index(self):
+    def index(self, datalad_host_secret=None):
+        cherrypy.session['datalad_host_secret'] = datalad_host_secret
+        from datalad_webapp import verify_host_secret
+        verify_host_secret()
+        return self.q()
+
+    @cherrypy.expose
+    @cherrypy.tools.verify_datalad_hostsecret()
+    def q(self):
         return """<html>
           <head></head>
           <body>
@@ -28,6 +36,7 @@ class MetadataAppExample(object):
         </html>"""
 
     @cherrypy.expose
+    @cherrypy.tools.verify_datalad_hostsecret()
     @tools.json_out()
     def m(self, path):
         from datalad.api import metadata
