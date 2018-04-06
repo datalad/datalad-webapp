@@ -17,6 +17,7 @@ setup(
         # aspect is an optional component of a larger project
         # disable for now as we currently need a Git snapshot (requirements.txt)
         #'datalad',
+        'CherryPy',
     ],
     entry_points = {
         'datalad.modules': [
