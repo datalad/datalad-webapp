@@ -20,8 +20,8 @@ setup(
         'CherryPy',
     ],
     entry_points = {
-        'datalad.modules': [
-            'webapp=datalad_webapp:module_suite',
+        'datalad.extensions': [
+            'webapp=datalad_webapp:command_suite',
         ],
         # 'datalad.webapps' is THE entrypoint inspected by the datalad webapp command
         'datalad.webapps': [

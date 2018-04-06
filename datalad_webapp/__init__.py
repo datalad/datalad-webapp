@@ -31,7 +31,7 @@ from datalad.distribution.dataset import EnsureDataset
 # defines a datalad command suite
 # this symbold must be indentified as a setuptools entrypoint
 # to be found by datalad
-module_suite = (
+command_suite = (
     # description of the command suite, displayed in cmdline help
     "Generic web app support",
     [('datalad_webapp', 'WebApp', 'webapp', 'webapp')]

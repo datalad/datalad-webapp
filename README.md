@@ -1,4 +1,4 @@
-# DataLad webapp extension module
+# DataLad webapp extension
 
 [![Travis tests status](https://secure.travis-ci.org/datalad/datalad-webapp.png?branch=master)](https://travis-ci.org/datalad/datalad-webapp) [![codecov.io](https://codecov.io/github/datalad/datalad-webapp/coverage.svg?branch=master)](https://codecov.io/github/datalad/datalad-webapp?branch=master)
 
