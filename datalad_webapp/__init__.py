@@ -12,17 +12,11 @@ __docformat__ = 'restructuredtext'
 
 import logging
 
-from os.path import dirname
-from os.path import basename
 from os.path import isdir
 from os.path import join as opj
 
-from glob import glob
-
-from datalad import cfg
 from pkg_resources import iter_entry_points
 
-from datalad.dochelpers import exc_str
 from datalad.utils import assure_list
 from datalad.interface.base import Interface
 from datalad.interface.base import build_doc
@@ -30,6 +24,7 @@ from datalad.support.param import Parameter
 from datalad.distribution.dataset import datasetmethod
 from datalad.interface.utils import eval_results
 from datalad.support.constraints import EnsureNone
+from datalad.support.constraints import EnsureChoice
 from datalad.distribution.dataset import EnsureDataset
 
 # defines a datalad command suite
@@ -43,7 +38,7 @@ module_suite = (
 
 # we want to hook into datalad's logging infrastructure, so we use a common
 # prefix
-lgr = logging.getLogger('datalad.module.webapp')
+lgr = logging.getLogger('datalad.extension.webapp')
 
 
 @build_doc
@@ -63,16 +58,18 @@ class WebApp(Interface):
             working directory. If a dataset is given, the command will be
             executed in the root directory of this dataset.""",
             constraints=EnsureDataset() | EnsureNone()),
-        daemonize=Parameter(
-            args=("--daemonize",),
-            action='store_true',
-            doc="yeah!"),
+        mode=Parameter(
+            args=("--mode",),
+            constraints=EnsureChoice('normal', 'daemon', 'dry-run'),
+            doc="""Execution mode: regular foreground process (normal);
+            background process (daemon); no server is started, but all
+            configuration is perform (dry-run)"""),
     )
 
     @staticmethod
     @datasetmethod(name='webapp')
     @eval_results
-    def __call__(app, dataset=None, daemonize=False):
+    def __call__(app, dataset=None, mode='normal'):
         apps = assure_list(app)
         if not apps:
             raise ValueError('no app specification given')
@@ -108,7 +105,7 @@ class WebApp(Interface):
                     cherrypy.server.ssl_private_key != None):
                 headers['Strict-Transport-Security'] = 'max-age=31536000'  # one year
 
-        if daemonize:
+        if mode == 'daemon':
             from cherrypy.process.plugins import Daemonizer
             Daemonizer(cherrypy.engine).subscribe()
             #PIDFile(cherrypy.engine, '/var/run/myapp.pid').subscribe()
@@ -118,14 +115,18 @@ class WebApp(Interface):
 
         enabled_apps = []
         for ep in iter_entry_points('datalad.webapps'):
+            lgr.debug("Available webapp '%s'", ep.name)
             if ep.name not in apps:
                 continue
             mount = apps[ep.name] if apps[ep.name] else '/'
             # get the webapp class
+            lgr.debug("Load webapp spec")
             cls = ep.load()
             # fire up the webapp instance
+            lgr.debug("Instantiate webapp")
             inst = cls(**dict(dataset=dataset))
             # mount under global URL tree (default or given suburl)
+            lgr.debug("Mount webapp '%s' at '%s'", inst, mount)
             app = cherrypy.tree.mount(
                 root=inst,
                 script_name=mount,
@@ -153,9 +154,14 @@ class WebApp(Interface):
                         'tools.staticdir.dir': cls._webapp_staticdir}}
                 )
         failed_apps = set(apps).difference(enabled_apps)
-        if failed_apps:
-            lgr.warning('Failed to load webapps: %s', failed_apps)
+        for failed_app in failed_apps:
+            yield dict(
+                action='webapp',
+                status='error',
+                message=('Failed to load webapp: %s', failed_app))
         if not enabled_apps:
+            return
+        if mode == 'dry-run':
             return
         cherrypy.engine.start()
         cherrypy.engine.block()
