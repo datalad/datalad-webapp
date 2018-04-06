@@ -204,7 +204,6 @@ class WebApp(Interface):
         cherrypy.engine.start()
         lgr.info(
             'Access authenticated webapp session at: http://%s:%i?datalad_host_secret=%s',
-            *cherrypy.server.bound_addr,
-            cherrypy.config['datalad_host_secret'])
+            *cherrypy.server.bound_addr + (cherrypy.config['datalad_host_secret'],))
         cherrypy.engine.block()
         yield {}
