@@ -117,9 +117,6 @@ class WebApp(Interface):
             'datalad_host_secret': hostsecret,
         })
 
-        cherrypy.tools.verify_datalad_hostsecret = cherrypy.Tool(
-            'before_handler', verify_host_secret)
-
         # set the priority according to your needs if you are hooking something
         # else on the 'before_finalize' hook point.
         @cherrypy.tools.register('before_finalize', priority=60)

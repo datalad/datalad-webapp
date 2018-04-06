@@ -4,6 +4,11 @@ from os.path import join as opj
 import cherrypy
 from cherrypy import tools
 
+from datalad_webapp import verify_host_secret
+
+cherrypy.tools.verify_datalad_hostsecret = cherrypy.Tool(
+    'before_handler', verify_host_secret)
+
 
 class MetadataAppExample(object):
     _webapp_dir = dirname(__file__)
