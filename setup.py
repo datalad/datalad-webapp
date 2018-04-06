@@ -28,7 +28,7 @@ setup(
             # the label in front of '=' is the webapp name
             # the entrypoint can point to any symbol of any name, as long it is
             # valid datalad interface specification
-            'example_metadata=examples.metadata.app:MetadataAppExample',
+            'example_metadata=datalad_webapp.examples.metadata.app:MetadataAppExample',
         ]
     },
 )
