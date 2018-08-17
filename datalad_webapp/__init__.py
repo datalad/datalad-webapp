@@ -192,6 +192,7 @@ class WebApp(Interface):
             yield dict(
                 action='webapp',
                 status='error',
+                path=dataset,
                 message=('Failed to load webapp: %s', failed_app))
         if not enabled_apps:
             return
