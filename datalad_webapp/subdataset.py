@@ -2,6 +2,7 @@ from flask_restful import (
     Resource,
     fields,
     marshal_with,
+    reqparse,
 )
 import os.path as op
 
@@ -34,5 +35,7 @@ class Subdataset(Resource):
     @verify_authentication
     @marshal_with(resource_fields, envelope='results')
     def get(self, fulfilled=None):
-        return self.ds.subdatasets(
-            fulfilled=fulfilled)
+        psr = reqparse.RequestParser()
+        psr.add_argument('fulfilled', type=bool)
+        args = psr.parse_args()
+        return self.ds.subdatasets(**args)
