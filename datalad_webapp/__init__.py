@@ -105,6 +105,8 @@ class WebApp(Interface):
         from flask_restful import Api
         api = Api(app, prefix="/api/v1")
 
+        # TODO use opt-in model for endpoints to limit exposure of
+        # functionality to what is really needed
         for ep in iter_entry_points('datalad.webapp.resources'):
             lgr.warn("Available webapp resource'%s'", ep.name)
             cls = ep.load()
