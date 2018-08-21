@@ -16,6 +16,7 @@ setup(
         'datalad',
         'flask',
         'flask-restful',
+        'pytest',
     ],
     entry_points = {
         'datalad.extensions': [
