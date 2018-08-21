@@ -117,6 +117,14 @@ class WebApp(Interface):
                     dataset=dataset,
                 ),
             )
+        if mode == 'dry-run':
+            yield dict(
+                action='webapp',
+                status='ok',
+                app=app,
+                path=dataset.path,
+            )
+            return
 
         # TODO expose flags, or use FLASK config vars
         app.run(debug=True)

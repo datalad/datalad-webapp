@@ -16,7 +16,7 @@ class RelPath(fields.String):
     def format(self, value):
         return op.relpath(value[0], value[1])
 
-
+# TODO global mapping for how to deal with datalad's result fields
 resource_fields = {
     'name': fields.String(attribute="gitmodule_name"),
     'path': RelPath(
@@ -34,8 +34,15 @@ class Subdataset(Resource):
 
     @verify_authentication
     @marshal_with(resource_fields, envelope='results')
-    def get(self, fulfilled=None):
+    def get(self, fulfilled=None, recursive=False):
         psr = reqparse.RequestParser()
         psr.add_argument('fulfilled', type=bool)
+        psr.add_argument('recursive', type=bool)
         args = psr.parse_args()
         return self.ds.subdatasets(**args)
+
+    # XXX could be added to change subdataset properties
+    #def post()
+
+    # XXX could be added to remove/uninstall subdatasets
+    #def delete()

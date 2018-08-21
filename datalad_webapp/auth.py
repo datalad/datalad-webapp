@@ -15,7 +15,7 @@ class Authentication(Resource):
     def get(self):
         if 'config' not in webapp_props:
             raise ValueError('No running webapp')
-        session['api_key'] = webapp_props['api_key']
+        session['api_key'] = webapp_props['config']['api_key']
         return jsonify({'api_key': session['api_key']})
 
     @verify_authentication
