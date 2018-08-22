@@ -119,7 +119,7 @@ class WebApp(Interface):
                 *urls,
                 resource_class_kwargs=dict(
                     dataset=dataset,
-                ),
+                )
             )
         if mode == 'dry-run':
             yield dict(
