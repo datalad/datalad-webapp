@@ -110,9 +110,13 @@ class WebApp(Interface):
         for ep in iter_entry_points('datalad.webapp.resources'):
             lgr.warn("Available webapp resource'%s'", ep.name)
             cls = ep.load()
+            urls = ['/{}'.format(ep.name)]
+            if hasattr(cls, '_urlarg_spec'):
+                urls.append('/{}/{}'.format(ep.name, cls._urlarg_spec))
+
             api.add_resource(
                 cls,
-                '/{}'.format(ep.name),
+                *urls,
                 resource_class_kwargs=dict(
                     dataset=dataset,
                 ),
