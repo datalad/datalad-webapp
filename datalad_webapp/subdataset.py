@@ -28,7 +28,7 @@ resource_fields = {
 }
 
 
-class Subdataset(Resource):
+class SubdatasetResource(Resource):
     def __init__(self, dataset):
         self.ds = dataset
 

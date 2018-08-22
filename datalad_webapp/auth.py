@@ -7,7 +7,7 @@ from datalad_webapp import (
 )
 
 
-class Authentication(Resource):
+class AuthenticationResource(Resource):
     def __init__(self, dataset):
         self.ds = dataset
 
