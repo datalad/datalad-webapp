@@ -1,5 +1,4 @@
 from flask_restful import (
-    Resource,
     fields,
     marshal_with,
     reqparse,
@@ -10,6 +9,7 @@ import os.path as op
 import datalad.distribution.subdatasets
 
 from datalad_webapp import verify_authentication
+from datalad_webapp.resource import WebAppResource
 
 
 class RelPath(fields.String):
@@ -28,10 +28,7 @@ resource_fields = {
 }
 
 
-class SubdatasetResource(Resource):
-    def __init__(self, dataset):
-        self.ds = dataset
-
+class SubdatasetResource(WebAppResource):
     @verify_authentication
     @marshal_with(resource_fields, envelope='results')
     def get(self, fulfilled=None, recursive=False):

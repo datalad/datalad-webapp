@@ -1,16 +1,13 @@
-from flask_restful import Resource
 from flask import session
 from flask import jsonify
 from datalad_webapp import (
     webapp_props,
     verify_authentication,
 )
+from datalad_webapp.resource import WebAppResource
 
 
-class AuthenticationResource(Resource):
-    def __init__(self, dataset):
-        self.ds = dataset
-
+class AuthenticationResource(WebAppResource):
     # TODO protect with httpauth
     def get(self):
         if 'config' not in webapp_props:
