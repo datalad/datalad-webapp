@@ -28,6 +28,7 @@ setup(
             # the label in front of '=' is the REST endpoint name
             # the entrypoint can point to any symbol of any name
             'auth=datalad_webapp.resources.auth:AuthenticationResource',
+            'file=datalad_webapp.resources.file:FileResource',
             'subdataset=datalad_webapp.resources.subdataset:SubdatasetResource',
         ]
     },
