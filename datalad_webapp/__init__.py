@@ -14,6 +14,7 @@ import logging
 import functools
 
 import os
+import os.path as op
 from pkg_resources import iter_entry_points
 
 from datalad.interface.base import Interface
@@ -92,18 +93,28 @@ class WebApp(Interface):
             doc="""Execution mode: regular foreground process (normal);
             background process (daemon); no server is started, but all
             configuration is perform (dry-run)"""),
+        static_root=Parameter(
+            args=("--static-root",),
+            doc="""path to static (HTML) files that should be served in
+            root of the webapp. Defaults to the current directory."""),
     )
 
     @staticmethod
     @datasetmethod(name='webapp')
     @eval_results
-    def __call__(dataset=None, read_only=False, mode='normal'):
+    def __call__(dataset=None, read_only=False, mode='normal',
+                 static_root=op.curdir):
         from datalad.distribution.dataset import require_dataset
         dataset = require_dataset(
             dataset, check_installed=True, purpose='serving')
 
         from flask import Flask
-        app = Flask(__name__)
+        app = Flask(
+            __name__,
+            root_path=dataset.path,
+            static_url_path='',
+            static_folder=static_root,
+        )
         app.secret_key = os.urandom(64)
         # expose via arg
         app.config['api_key'] = 'dummy'
