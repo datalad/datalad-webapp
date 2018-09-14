@@ -50,14 +50,14 @@ def test_server_startup(client):
 def test_read(client):
     client, ds = client
     with client as c:
-        assert client.get('/api/v1/auth').status_code == 200
-        existing_files = client.get('/api/v1/file').get_json()['files']
+        assert c.get('/api/v1/auth').status_code == 200
+        existing_files = c.get('/api/v1/file').get_json()['files']
 
-        file_content = '"three": 3}'
+        file_content = '{"three": 3}'
         # resource picks up live changes to the dataset
         create_tree(ds.path, {'subdir': {'dummy': file_content}})
         ds.add('.')
-        current_files = client.get('/api/v1/file').get_json()['files']
+        current_files = c.get('/api/v1/file').get_json()['files']
         testpath = 'subdir/dummy'
         assert testpath not in existing_files
         assert testpath in current_files
@@ -74,7 +74,20 @@ def test_read(client):
                  {'data': json.dumps(dict(path=testpath)),
                   'content_type': 'application/json'}),
         ):
-            rq = client.get(*a, **kwa)
+            rq = c.get(*a, **kwa)
             assert rq.status_code == 200
             assert rq.get_json()['path'] == testpath
             assert rq.get_json()['content'] == file_content
+
+        for j, target in (
+                ('no', file_content),
+                # JSON decoding
+                ('yes', {'three': 3}),
+                # JSON stream decoding
+                ('stream', [{'three': 3}]),
+        ):
+            assert c.get(
+                '/api/v1/file',
+                data=json.dumps(dict(path=testpath, json=j)),
+                content_type='application/json',
+                ).get_json()['content'] == target

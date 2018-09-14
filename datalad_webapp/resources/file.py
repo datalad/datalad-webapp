@@ -9,7 +9,10 @@ import os.path as op
 
 from datalad_webapp import verify_authentication
 from datalad_webapp.resource import WebAppResource
-
+from datalad.support import json_py
+from datalad.support.constraints import (
+    EnsureChoice,
+)
 import logging
 lgr = logging.getLogger('datalad.webapp.resources.file')
 
@@ -21,10 +24,16 @@ class FileResource(WebAppResource):
     def __init__(self, *args, **kwargs):
         super(FileResource, self).__init__(*args, **kwargs)
         # setup parser
+        json_type = EnsureChoice('yes', 'no', 'stream')
         self.rp = reqparse.RequestParser()
         self.rp.add_argument(
             'path', type=str,
             help='path to file',
+            location=['args', 'json', 'form'])
+        self.rp.add_argument(
+            'json', type=json_type,
+            default='no',
+            help='%s. {error_msg}' % repr(json_type),
             location=['args', 'json', 'form'])
 
     @verify_authentication
@@ -49,9 +58,14 @@ class FileResource(WebAppResource):
             # -> rejected due to semantic error: dir != file
             abort(422)
         # TODO actually get the file content
-        content = open(file_abspath, 'r').read()
-        # TODO json_py.loads/load_stream if flag in request
-        # TODO split by line if requested
+        # TODO proper error reporting when loading/decoding fails
+        if args.json == 'stream':
+            content = list(json_py.load_stream(file_abspath))
+        elif args.json == 'yes':
+            content = json_py.load(file_abspath)
+        else:
+            content = open(file_abspath, 'r').read()
+
         return jsonify({
             'path': path,
             'content': content,
