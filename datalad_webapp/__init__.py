@@ -16,15 +16,17 @@ import functools
 import os
 from pkg_resources import iter_entry_points
 
-from datalad.utils import assure_list
 from datalad.interface.base import Interface
 from datalad.interface.base import build_doc
 from datalad.interface.utils import eval_results
 from datalad.support.param import Parameter
 from datalad.distribution.dataset import datasetmethod
 from datalad.distribution.dataset import EnsureDataset
-from datalad.support.constraints import EnsureNone
-from datalad.support.constraints import EnsureChoice
+from datalad.support.constraints import (
+    EnsureNone,
+    EnsureChoice,
+    EnsureBool
+)
 
 # defines a datalad command suite
 # this symbold must be indentified as a setuptools entrypoint
@@ -78,6 +80,12 @@ class WebApp(Interface):
             working directory. If a dataset is given, the command will be
             executed in the root directory of this dataset.""",
             constraints=EnsureDataset() | EnsureNone()),
+        read_only=Parameter(
+            args=("--read-only",),
+            constraints=EnsureBool(),
+            doc="""do not perform operations other then read-only access
+            to dataset. It is up to the individual resources to interpret
+            this flag and act accordingly."""),
         mode=Parameter(
             args=("--mode",),
             constraints=EnsureChoice('normal', 'daemon', 'dry-run'),
@@ -89,7 +97,7 @@ class WebApp(Interface):
     @staticmethod
     @datasetmethod(name='webapp')
     @eval_results
-    def __call__(dataset=None, mode='normal'):
+    def __call__(dataset=None, read_only=False, mode='normal'):
         from datalad.distribution.dataset import require_dataset
         dataset = require_dataset(
             dataset, check_installed=True, purpose='serving')

@@ -57,7 +57,10 @@ class FileResource(WebAppResource):
         if op.isdir(file_abspath):
             # -> rejected due to semantic error: dir != file
             abort(422)
-        # TODO actually get the file content
+        if not self.read_only:
+            # in read only mode we cannot do this, as it might cause
+            # more datasets to be install etc...
+            self.ds.get(file_abspath)
         # TODO proper error reporting when loading/decoding fails
         if args.json == 'stream':
             content = list(json_py.load_stream(file_abspath))
