@@ -10,6 +10,7 @@ from datalad.api import (
 
 from datalad.tests.utils import (
     create_tree,
+    assert_result_count,
 )
 
 @pytest.fixture
@@ -90,3 +91,32 @@ def test_read(client):
                 data=json.dumps(dict(path=testpath, json=j)),
                 content_type='application/json',
                 ).get_json()['content'] == target
+
+
+def test_delete(client):
+    client, ds = client
+    with client as c:
+        assert client.delete('/api/v1/file').status_code == 401
+        assert c.get('/api/v1/auth').status_code == 200
+
+        # missing path
+        assert client.delete('/api/v1/file').status_code == 400
+
+        testpath = 'subdir/dummy'
+        file_content = '{"three": 3}'
+        # resource picks up live changes to the dataset
+        create_tree(ds.path, {'subdir': {'dummy': file_content}})
+        ds.add('.')
+        assert testpath in c.get('/api/v1/file').get_json()['files']
+
+        rq = c.delete(
+            '/api/v1/file',
+            data=json.dumps(dict(
+                path=testpath,
+                verify_availability=False,
+            )),
+            content_type='application/json',
+        ).get_json()
+        assert_result_count(rq, 1, action='remove', status='ok', path=testpath)
+
+        assert testpath not in c.get('/api/v1/file').get_json()['files']

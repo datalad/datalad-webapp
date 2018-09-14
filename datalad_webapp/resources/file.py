@@ -11,6 +11,7 @@ from datalad_webapp import verify_authentication
 from datalad_webapp.resource import WebAppResource
 from datalad.support import json_py
 from datalad.support.constraints import (
+    EnsureBool,
     EnsureChoice,
 )
 import logging
@@ -24,6 +25,7 @@ class FileResource(WebAppResource):
     def __init__(self, *args, **kwargs):
         super(FileResource, self).__init__(*args, **kwargs)
         # setup parser
+        bool_type = EnsureBool()
         json_type = EnsureChoice('yes', 'no', 'stream')
         self.rp = reqparse.RequestParser()
         self.rp.add_argument(
@@ -35,6 +37,24 @@ class FileResource(WebAppResource):
             default='no',
             help='%s. {error_msg}' % repr(json_type),
             location=['args', 'json', 'form'])
+        self.rp.add_argument(
+            'verify_availability', type=bool_type,
+            default='yes',
+            help='%s. {error_msg}' % repr(bool_type),
+            location=['args', 'json', 'form'])
+
+    def _validate_file_path(self, path):
+        file_abspath = op.join(self.ds.path, path)
+        if op.relpath(file_abspath, self.ds.path).startswith(op.pardir):
+            # XXX not sure if this can actually happen
+            # something funky is going on -> forbidden
+            abort(403)
+        if not op.exists(file_abspath):
+            abort(404)
+        if op.isdir(file_abspath):
+            # -> rejected due to semantic error: dir != file
+            abort(422)
+        return file_abspath
 
     @verify_authentication
     def get(self, path=None):
@@ -47,16 +67,7 @@ class FileResource(WebAppResource):
                 'files': self.ds.repo.get_indexed_files(),
             })
 
-        file_abspath = op.join(self.ds.path, path)
-        if op.relpath(file_abspath, self.ds.path).startswith(op.pardir):
-            # XXX not sure if this can actually happen
-            # something funky is going on -> forbidden
-            abort(403)
-        if not op.exists(file_abspath):
-            abort(404)
-        if op.isdir(file_abspath):
-            # -> rejected due to semantic error: dir != file
-            abort(422)
+        file_abspath = self._validate_file_path(path)
         if not self.read_only:
             # in read only mode we cannot do this, as it might cause
             # more datasets to be install etc...
@@ -78,6 +89,19 @@ class FileResource(WebAppResource):
         if self.read_only:
             abort(403)
 
-    def delete(self):
+    @verify_authentication
+    def delete(self, path=None):
         if self.read_only:
             abort(403)
+        args = self.rp.parse_args()
+        # either use value from routing, or from request
+        path = path or args.path
+        if path is None:
+            # BadRequest
+            abort(400)
+        file_abspath = self._validate_file_path(path)
+
+        return self.ds.remove(
+            file_abspath,
+            check=args.verify_availability,
+        )
