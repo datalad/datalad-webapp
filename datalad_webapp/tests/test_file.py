@@ -1,7 +1,6 @@
 import pytest
 import flask
 import json
-from six.moves.urllib.parse import urlencode
 
 from datalad.api import (
     create,
