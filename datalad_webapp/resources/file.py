@@ -18,8 +18,20 @@ class FileResource(WebAppResource):
     # any arg is treated as a relative path
     _urlarg_spec = '<path:path>'
 
+    def __init__(self, *args, **kwargs):
+        super(FileResource, self).__init__(*args, **kwargs)
+        # setup parser
+        self.rp = reqparse.RequestParser()
+        self.rp.add_argument(
+            'path', type=str,
+            help='path to file',
+            location=['args', 'json', 'form'])
+
     @verify_authentication
     def get(self, path=None):
+        args = self.rp.parse_args()
+        # either use value from routing, or from request
+        path = path or args.path
         if path is None:
             # no path, give list of available files
             return jsonify({
@@ -36,6 +48,7 @@ class FileResource(WebAppResource):
         if op.isdir(file_abspath):
             # -> rejected due to semantic error: dir != file
             abort(422)
+        # TODO actually get the file content
         content = open(file_abspath, 'r').read()
         # TODO json_py.loads/load_stream if flag in request
         # TODO split by line if requested
