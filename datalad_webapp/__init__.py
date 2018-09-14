@@ -89,10 +89,11 @@ class WebApp(Interface):
             this flag and act accordingly."""),
         mode=Parameter(
             args=("--mode",),
-            constraints=EnsureChoice('normal', 'daemon', 'dry-run'),
+            constraints=EnsureChoice('normal', 'daemon', 'dry-run', 'debug'),
             doc="""Execution mode: regular foreground process (normal);
             background process (daemon); no server is started, but all
-            configuration is perform (dry-run)"""),
+            configuration is perform (dry-run); like normal, but in debug
+            mode (debug)"""),
         static_root=Parameter(
             args=("--static-root",),
             doc="""path to static (HTML) files that should be served in
@@ -124,6 +125,7 @@ class WebApp(Interface):
         from flask_restful import Api
         api = Api(app, prefix="/api/v1")
 
+        # TODO add default route to static index.html, if one exists
         # TODO use opt-in model for endpoints to limit exposure of
         # functionality to what is really needed
         for ep in iter_entry_points('datalad.webapp.resources'):
@@ -150,4 +152,4 @@ class WebApp(Interface):
             return
 
         # TODO expose flags, or use FLASK config vars
-        app.run(debug=True)
+        app.run(debug=mode == 'debug')
