@@ -74,8 +74,10 @@ class FileResource(WebAppResource):
             'content': content,
         })
 
-    #def post()
+    def put(self):
+        if self.read_only:
+            abort(403)
 
-    #def put()
-
-    #def delete()
+    def delete(self):
+        if self.read_only:
+            abort(403)
