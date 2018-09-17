@@ -114,7 +114,7 @@ class WebApp(Interface):
             __name__,
             root_path=dataset.path,
             static_url_path='',
-            static_folder=static_root,
+            static_folder=op.abspath(static_root),
         )
         app.secret_key = os.urandom(64)
         # expose via arg
