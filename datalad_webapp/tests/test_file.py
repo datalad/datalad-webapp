@@ -13,6 +13,7 @@ from datalad.tests.utils import (
     assert_result_count,
 )
 
+
 @pytest.fixture
 def client(tmpdir):
     ds = create(tmpdir.strpath)

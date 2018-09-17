@@ -8,6 +8,11 @@ from flask_restful import (
 import os.path as op
 from fnmatch import fnmatch
 
+from datalad.api import (
+    get,
+    remove,
+)
+
 from datalad_webapp import verify_authentication
 from datalad_webapp.resource import WebAppResource
 from datalad.support import json_py
