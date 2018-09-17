@@ -13,22 +13,23 @@ setup(
     packages=[pkg for pkg in find_packages('.') if pkg.startswith('datalad')],
     # datalad command suite specs from here
     install_requires=[
-        # in general datalad will be a requirement, unless the datalad extension
-        # aspect is an optional component of a larger project
-        # disable for now as we currently need a Git snapshot (requirements.txt)
-        #'datalad',
-        'CherryPy',
+        'datalad',
+        'flask',
+        'flask-restful',
+        'pytest',
+        'pytest-cov',
     ],
     entry_points = {
         'datalad.extensions': [
             'webapp=datalad_webapp:command_suite',
         ],
         # 'datalad.webapps' is THE entrypoint inspected by the datalad webapp command
-        'datalad.webapps': [
-            # the label in front of '=' is the webapp name
-            # the entrypoint can point to any symbol of any name, as long it is
-            # valid datalad interface specification
-            'example_metadata=datalad_webapp.examples.metadata.app:MetadataAppExample',
+        'datalad.webapp.resources': [
+            # the label in front of '=' is the REST endpoint name
+            # the entrypoint can point to any symbol of any name
+            'auth=datalad_webapp.resources.auth:AuthenticationResource',
+            'file=datalad_webapp.resources.file:FileResource',
+            'subdataset=datalad_webapp.resources.subdataset:SubdatasetResource',
         ]
     },
 )
