@@ -62,6 +62,9 @@ def test_read(client):
         assert testpath not in existing_files
         assert testpath in current_files
 
+        # simple path filtering
+        assert c.get('/api/v1/file/*dummy').get_json()['files'] == [testpath]
+
         # request file content in various supported ways
         for a, kwa in (
                 # plain URL routing

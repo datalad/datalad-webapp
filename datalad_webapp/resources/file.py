@@ -6,6 +6,7 @@ from flask_restful import (
     reqparse,
 )
 import os.path as op
+from fnmatch import fnmatch
 
 from datalad_webapp import verify_authentication
 from datalad_webapp.resource import WebAppResource
@@ -30,7 +31,9 @@ class FileResource(WebAppResource):
         self.rp = reqparse.RequestParser()
         self.rp.add_argument(
             'path', type=str,
-            help='path to file',
+            help="""path to file. If none is given, or the path contains a
+            wildcard character '*', a list of (matching) files in the
+            dataset is returned.""",
             location=['args', 'json', 'form'])
         self.rp.add_argument(
             'json', type=json_type,
@@ -61,10 +64,12 @@ class FileResource(WebAppResource):
         args = self.rp.parse_args()
         # either use value from routing, or from request
         path = path or args.path
-        if path is None:
+        if path is None or '*' in path:
+            path = path if path else '*'
             # no path, give list of available files
             return jsonify({
-                'files': self.ds.repo.get_indexed_files(),
+                'files': [f for f in self.ds.repo.get_indexed_files()
+                          if fnmatch(f, path)],
             })
 
         file_abspath = self._validate_file_path(path)
