@@ -93,7 +93,7 @@ def test_read(client):
                 '/api/v1/file',
                 data=json.dumps(dict(path=testpath, json=j)),
                 content_type='application/json',
-                ).get_json()['content'] == target
+            ).get_json()['content'] == target
 
 
 def test_delete(client):
@@ -120,6 +120,9 @@ def test_delete(client):
             )),
             content_type='application/json',
         ).get_json()
-        assert_result_count(rq, 1, action='remove', status='ok', path=testpath)
-
+        if ds.config.obtain('datalad.repo.direct', False):
+            # https://github.com/datalad/datalad/issues/2836
+            return
+        assert_result_count(rq, 1, action='remove',
+                            status='ok', path=testpath)
         assert testpath not in c.get('/api/v1/file').get_json()['files']
