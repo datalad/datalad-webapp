@@ -5,6 +5,7 @@ from flask import (
 from flask_restful import (
     reqparse,
 )
+import os
 import os.path as op
 from fnmatch import fnmatch
 
@@ -50,16 +51,21 @@ class FileResource(WebAppResource):
             default='yes',
             help='%s. {error_msg}' % repr(bool_type),
             location=['args', 'json', 'form'])
+        self.rp.add_argument(
+            'content',
+            help='file content',
+            location=['json', 'form'])
+        # TODO message argument for commits
 
-    def _validate_file_path(self, path):
+    def _validate_file_path(self, path, fail_nonexistent=True):
         file_abspath = op.join(self.ds.path, path)
         if op.relpath(file_abspath, self.ds.path).startswith(op.pardir):
             # XXX not sure if this can actually happen
             # something funky is going on -> forbidden
             abort(403)
-        if not op.exists(file_abspath):
+        if fail_nonexistent and not op.exists(file_abspath):
             abort(404)
-        if op.isdir(file_abspath):
+        if op.exists(file_abspath) and op.isdir(file_abspath):
             # -> rejected due to semantic error: dir != file
             abort(422)
         return file_abspath
@@ -95,9 +101,36 @@ class FileResource(WebAppResource):
             'content': content,
         })
 
-    def put(self):
+    # TODO support compression
+    @verify_authentication
+    def put(self, path=None):
         if self.read_only:
             abort(403)
+        args = self.rp.parse_args()
+        if path is None or args.content is None:
+            # BadRequest
+            abort(400)
+        file_abspath = self._validate_file_path(
+            path, fail_nonexistent=False)
+        # TODO handle failure without crashing
+        if op.exists(file_abspath):
+            self.ds.repo.remove(file_abspath)
+        # TODO git checkout of that removed files, when
+        # below fails
+        # TODO support file uploads
+        dirname = op.dirname(file_abspath)
+        if not op.exists(dirname):
+            os.makedirs(dirname)
+        if args.json == 'stream':
+            json_py.dump2stream(args.content, file_abspath)
+        elif args.json == 'yes':
+            json_py.dump(args.content, file_abspath)
+        else:
+            open(file_abspath, 'w').write(args.content)
+        self.ds.add(
+            file_abspath,
+            #message="",
+        )
 
     @verify_authentication
     def delete(self, path=None):

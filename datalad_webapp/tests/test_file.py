@@ -1,6 +1,7 @@
 import pytest
 import flask
 import json
+import os.path as op
 
 from datalad.api import (
     create,
@@ -11,6 +12,8 @@ from datalad.api import (
 from datalad.tests.utils import (
     create_tree,
     assert_result_count,
+    ok_file_has_content,
+    ok_clean_git,
 )
 
 
@@ -127,3 +130,36 @@ def test_delete(client):
         assert_result_count(rq, 1, action='remove',
                             status='ok', path=testpath)
         assert testpath not in c.get('/api/v1/file').get_json()['files']
+
+
+def test_put(client):
+    client, ds = client
+    with client as c:
+        assert c.get('/api/v1/auth').status_code == 200
+    ok_clean_git(ds.path)
+
+    testpath = 'subdir/dummy'
+    file_content = '{"three": 3}'
+    assert testpath not in c.get('/api/v1/file').get_json()['files']
+
+    count = 0
+    for kw, content in (
+            ({}, file_content),
+            ({'json': 'stream'}, file_content),
+            ({'json': 'yes'}, file_content),
+    ):
+        targetpath = '{}_{}'.format(testpath, count)
+        rq = c.put(
+            '/api/v1/file/{}'.format(targetpath),
+            data=json.dumps(dict(
+                content=file_content,
+            )),
+            content_type='application/json',
+        )
+        assert rq.status_code == 200
+        assert targetpath in c.get('/api/v1/file').get_json()['files']
+        ok_file_has_content(
+            op.join(ds.path, targetpath),
+            content=content)
+        count += 1
+        ok_clean_git(ds.path)
