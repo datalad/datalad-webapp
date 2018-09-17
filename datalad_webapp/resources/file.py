@@ -54,6 +54,12 @@ class FileResource(WebAppResource):
         self.rp.add_argument(
             'content',
             help='file content',
+            location=['form', 'json'])
+        self.rp.add_argument(
+            'togit', type=bool_type,
+            help="""flag whether to add files to git, instead of making a
+            decision based on the dataset configuration. %s. {error_msg}"""
+            % repr(bool_type),
             location=['json', 'form'])
         # TODO message argument for commits
 
@@ -107,6 +113,7 @@ class FileResource(WebAppResource):
         if self.read_only:
             abort(403)
         args = self.rp.parse_args()
+        path = path or args.path
         if path is None or args.content is None:
             # BadRequest
             abort(400)
@@ -122,13 +129,16 @@ class FileResource(WebAppResource):
         if not op.exists(dirname):
             os.makedirs(dirname)
         if args.json == 'stream':
-            json_py.dump2stream(args.content, file_abspath)
+            json_py.dump2stream(
+                json_py.loads(args.content), file_abspath)
         elif args.json == 'yes':
-            json_py.dump(args.content, file_abspath)
+            json_py.dump(
+                json_py.loads(args.content), file_abspath)
         else:
             open(file_abspath, 'w').write(args.content)
         self.ds.add(
             file_abspath,
+            to_git=args.togit,
             #message="",
         )
 
