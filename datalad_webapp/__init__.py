@@ -15,7 +15,12 @@ import functools
 
 import os
 import os.path as op
-from pkg_resources import iter_entry_points
+from pkg_resources import (
+    iter_entry_points,
+    resource_isdir,
+    resource_filename,
+)
+from pkg_resources import resource_isdir
 
 from datalad.interface.base import Interface
 from datalad.interface.base import build_doc
@@ -74,6 +79,11 @@ class WebApp(Interface):
     """
     """
     _params_ = dict(
+        app=Parameter(
+            args=('app',),
+            nargs='?',
+            metavar='APPNAME',
+            doc="""Name of a registered webapp to start"""),
         dataset=Parameter(
             args=("-d", "--dataset"),
             doc="""specify the dataset to serve as the anchor of the webapp.
@@ -98,16 +108,60 @@ class WebApp(Interface):
             args=("--static-root",),
             doc="""path to static (HTML) files that should be served in
             root of the webapp. Defaults to the current directory."""),
+        get_apps=Parameter(
+            args=('--get-apps',),
+            action='store_true',
+            doc="""if set, yields all registered webapp."""),
     )
 
     @staticmethod
     @datasetmethod(name='webapp')
     @eval_results
-    def __call__(dataset=None, read_only=False, mode='normal',
-                 static_root=op.curdir):
+    def __call__(app=None, dataset=None, read_only=False, mode='normal',
+                 static_root=None, get_apps=False):
+        if get_apps:
+            for ep in iter_entry_points('datalad.webapp.apps'):
+                yield dict(
+                    action='webapp',
+                    status='ok'
+                    if resource_isdir(ep.module_name, ep.load()) else 'error',
+                    path=ep.name,
+                    logger=lgr,
+                    message=("provided by '%s'", ep.module_name))
+            return
+
         from datalad.distribution.dataset import require_dataset
         dataset = require_dataset(
             dataset, check_installed=True, purpose='serving')
+
+        if static_root is None and app:
+            for ep in iter_entry_points('datalad.webapp.apps'):
+                if ep.name == app:
+                    app_path = resource_filename(ep.module_name, ep.load())
+                    if not resource_isdir(ep.module_name, ep.load()):
+                        yield dict(
+                            action='webapp',
+                            status='error',
+                            path=dataset.path,
+                            message=(
+                                "app entrypoint '%s' does not point to directory",
+                                app, app_path)
+                        )
+                        return
+                    static_root = app_path
+                    break
+            if static_root is None:
+                yield dict(
+                    action='webapp',
+                    status='error',
+                    path=dataset.path,
+                    message=(
+                        "no registered webapp with name '%s'",
+                        app)
+                )
+                return
+        elif static_root is None:
+            static_root = op.curdir
 
         from flask import Flask
         app = Flask(
