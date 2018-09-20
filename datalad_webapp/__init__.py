@@ -10,6 +10,8 @@
 
 __docformat__ = 'restructuredtext'
 
+__version__ = '0.1'
+
 import logging
 import functools
 
@@ -20,7 +22,6 @@ from pkg_resources import (
     resource_isdir,
     resource_filename,
 )
-from pkg_resources import resource_isdir
 
 from datalad.interface.base import Interface
 from datalad.interface.base import build_doc
