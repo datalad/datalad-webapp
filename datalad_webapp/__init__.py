@@ -214,5 +214,18 @@ class WebApp(Interface):
             )
             return
 
+        print("""
+*************************************************
+*************************************************
+
+      THIS IS NOT A PRODUCTION-READY TOOL
+
+      - only use in a trusted environment
+      - do not expose service on public
+        network interfaces
+
+*************************************************
+*************************************************
+""")
         # TODO expose flags, or use FLASK config vars
         app.run(debug=mode == 'debug')
