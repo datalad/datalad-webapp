@@ -196,6 +196,15 @@ class WebApp(Interface):
                     dataset=dataset,
                 )
             )
+
+        if op.exists(op.join(static_root, 'index.html')):
+            from flask import send_from_directory
+
+            @app.route('/')
+            def serve_index():
+                return send_from_directory(
+                    static_root, 'index.html')
+
         if mode == 'dry-run':
             yield dict(
                 action='webapp',
