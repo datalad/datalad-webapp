@@ -44,6 +44,7 @@ setup(
             'auth=datalad_webapp.resources.auth:AuthenticationResource',
             'file=datalad_webapp.resources.file:FileResource',
             'subdataset=datalad_webapp.resources.subdataset:SubdatasetResource',
+            'procedure=datalad_webapp.resources.procedure:ProcedureResource',
         ]
     },
 )
