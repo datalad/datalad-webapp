@@ -4,6 +4,7 @@ import flask
 
 from datalad.api import create
 from datalad.api import webapp
+from datalad_webapp.tests.helpers import assert_get_resource_needs_authentication
 
 
 @pytest.fixture
@@ -43,23 +44,12 @@ def client(tmpdir):
     yield client, ds
 
 
-def test_server_startup(client):
+def test_get_procedures(client):
     client, ds = client
     with client as c:
-        # unauthorized access is prevented
+        assert_get_resource_needs_authentication(client, 'procedure')
+        # request list of available procedures
         rv = client.get('/api/v1/procedure')
-        assert rv.status_code == 401
-        assert 'results' not in rv.get_json()
-        # we get no magic authentication
-        assert 'api_key' not in flask.session
-
-        # authenticate
-        rv = client.get('/api/v1/auth')
-        assert rv.status_code == 200
-
-        # request list of files
-        rv = client.get('/api/v1/procedure')
-        assert rv.status_code == 200
 
         target_result = {'name': 'dummy_procedure',
                          'path': 'dummy_procedure.py',
