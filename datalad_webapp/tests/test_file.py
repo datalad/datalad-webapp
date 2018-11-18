@@ -16,6 +16,8 @@ from datalad.tests.utils import (
     ok_clean_git,
 )
 
+from datalad_webapp.tests.helpers import assert_get_resource_needs_authentication
+
 
 @pytest.fixture
 def client(tmpdir):
@@ -34,20 +36,9 @@ def client(tmpdir):
 def test_server_startup(client):
     client, ds = client
     with client as c:
-        # unauthorized access is prevented
-        rv = client.get('/api/v1/file')
-        assert rv.status_code == 401
-        assert 'results' not in rv.get_json()
-        # we get no magic authentication
-        assert 'api_key' not in flask.session
-
-        # authenticate
-        rv = client.get('/api/v1/auth')
-        assert rv.status_code == 200
-
+        assert_get_resource_needs_authentication(client, 'file')
         # request list of files
         rv = client.get('/api/v1/file')
-        assert rv.status_code == 200
         assert {'files': ds.repo.get_indexed_files()} == rv.get_json()
 
 
