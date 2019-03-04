@@ -30,7 +30,6 @@ setup(
         'datalad',
         'flask',
         'flask-restful',
-        'pytest',
         'pytest-cov',
     ],
     entry_points = {
