@@ -30,8 +30,6 @@ setup(
         'datalad',
         'flask',
         'flask-restful',
-        # Temporary: Prove failure on Travis:
-        'pytest',
         'pytest-cov',
     ],
     entry_points = {
