@@ -28,8 +28,8 @@ setup(
     # datalad command suite specs from here
     install_requires=[
         'datalad',
-        'flask',
-        'flask-restful',
+        'Flask>=1.0',
+        'Flask-RESTful',
         'pytest-cov',
     ],
     entry_points = {
