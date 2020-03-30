@@ -3,7 +3,6 @@
 language: python
 
 python:
-  - 2.7
   - 3.5
   - 3.6
 
@@ -16,7 +15,7 @@ env:
     - DATALAD_LOG_CMD_ENV=GIT_SSH_COMMAND
     - DATALAD_DATASETS_TOPURL=http://datasets-tests.datalad.org
   matrix:
-    - DATALAD_REPO_VERSION=6
+    - DATALAD_REPO_VERSION=7
     - DATALAD_REPO_VERSION=5
 
 
