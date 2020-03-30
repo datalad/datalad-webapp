@@ -14,7 +14,7 @@ def client(tmpdir):
     with open(os.path.join(ds.path, 'dummy_procedure.py'), 'w') as f:
         f.write("import sys; print(\"This is a dummy procedure running in %s\" "
                 "% sys.argv[1]")
-    ds.add('dummy_procedure.py', to_git=True, save=False)
+    ds.save('dummy_procedure.py', to_git=True, message="dummy procedure added")
 
     ds.config.add(
         'datalad.locations.dataset-procedures',
@@ -30,7 +30,7 @@ def client(tmpdir):
         "This is a help message",
         where='dataset'
     )
-    ds.save(message="dummy procedure added")
+    ds.save(message="dummy procedure config added")
 
     res = webapp(
         dataset=ds.path,

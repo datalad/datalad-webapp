@@ -27,7 +27,7 @@ setup(
     packages=[pkg for pkg in find_packages('.') if pkg.startswith('datalad')],
     # datalad command suite specs from here
     install_requires=[
-        'datalad',
+        'datalad>=0.12',
         'Flask>=1.0',
         'Flask-RESTful',
         'pytest-cov',
