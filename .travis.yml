@@ -40,12 +40,12 @@ install:
   - sudo sed -i -e 's/^Defaults.*secure_path.*$//' /etc/sudoers
 
 script:
-  # Report WTF information using system wide installed version
-  - datalad wtf
   # Verify that setup.py build doesn't puke
   - python setup.py build
   # Test installation system-wide
   - sudo pip install .
+  # Report WTF information using system wide installed version
+  - datalad wtf
   # Run tests
   - http_proxy=
     PATH=$PWD/tools/coverage-bin:$PATH
