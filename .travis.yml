@@ -3,7 +3,6 @@
 language: python
 
 python:
-  - 2.7
   - 3.5
   - 3.6
 
@@ -16,7 +15,7 @@ env:
     - DATALAD_LOG_CMD_ENV=GIT_SSH_COMMAND
     - DATALAD_DATASETS_TOPURL=http://datasets-tests.datalad.org
   matrix:
-    - DATALAD_REPO_VERSION=6
+    - DATALAD_REPO_VERSION=7
     - DATALAD_REPO_VERSION=5
 
 
@@ -41,12 +40,12 @@ install:
   - sudo sed -i -e 's/^Defaults.*secure_path.*$//' /etc/sudoers
 
 script:
-  # Report WTF information using system wide installed version
-  - datalad wtf
   # Verify that setup.py build doesn't puke
   - python setup.py build
   # Test installation system-wide
   - sudo pip install .
+  # Report WTF information using system wide installed version
+  - datalad wtf
   # Run tests
   - http_proxy=
     PATH=$PWD/tools/coverage-bin:$PATH
